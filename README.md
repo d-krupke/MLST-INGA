@@ -18,11 +18,11 @@
 
 We have the following communication graph:
 
-![Connectivity Graph](./.index_md-files/mlst1.png)
+![Connectivity Graph](./.readme_md-files/mlst1.png)
 
 Only the red nodes need to stay online to ensure immediate communication possibility
 
-![MLST](./.index_md-files/mlst2.png)
+![MLST](./.readme_md-files/mlst2.png)
 
 
 ## Previous Work
@@ -46,6 +46,8 @@ The BFS can be simply implemented by a single public variable *d*: If sink, d=0.
 This gives us a set of potential parents (those neighbors n with n.d = d+1).
 From this set chose the parent with the maximal amount of children.
 
+![MLST-Animation](./.readme_md-files/mlst.gif)
+
 There are some details that have to be taken care of like: 
 
 * How to determine the amount of children?
@@ -61,13 +63,50 @@ To evaluate the applicability and performance of the algorithm, experiments in a
 * n Robots with range *1.8m* and radius *10cm* are placed randomly in a *sqrt(n) x sqrt(n)* square
 * On average there are around 66\% leaves
 
-![Experiment-30Nodes-24Leaves](./.index_md-files/30-24.png)
-![Experiment-60Nodes-41Leaves](./.index_md-files/60-41.png)
-![Experiment-90Nodes-66Leaves](./.index_md-files/90-66.png)
+![Experiment-30Nodes-24Leaves](./.readme_md-files/30-24.png)
+![Experiment-60Nodes-41Leaves](./.readme_md-files/60-41.png)
+![Experiment-90Nodes-66Leaves](./.readme_md-files/90-66.png)
 
 ## Public Variables
 
-	TODO
+Public Variables are a robust concept for distributed algorithm that are close to the mathematical description.
+E.g. Let's build a routing tree, i.e., every node knows how far it is from the root.
+Obviously the root itself knows it has distance 0, the other nodes know that they have the minimal distance of their neighbors plus their distance to this neighbor (assumed to be 1).
+Thus we obtain dist = min{n.dist+1 | n in Neighorhood}
+
+![Public Variable Example](./.readme_md-files/pv.gif)
+
+The implementation of the algorithm consists of two parts:
+
+1. Define a public variable and init PVN
+
+	struct distancePubVar { // The public variable
+	uint16_t distance ;
+	};
+	struct distancePubVar own_pv ; // own instance of the PV
+	struct PVN pvn ; // The public variable neighborhood
+	own_pv . distance = 0 xffff ; // Set distance to maximal
+	pvn_init (& pvn , 123 , // Port
+		& own_pv , sizeof ( own_pv ) , // own PV
+		10 // Maximal age of neighbor entry
+		);
+
+2. Loop (actual algorithm)
+	
+	while (1){
+		pvn_remove_old_neighbr_information(&pvn);
+		own_pv . distance = 0 xffff ; // Set distance to maximal
+		// Iterating neighbors
+		struct Nbr * nbr = pvn_getNbrs (& pvn );
+		for (; nbr !=0; nbr = pvn_getNextNbr ( nbr )){
+			struct distancePubVar * n_pv =
+			( struct distancePubVar*)( nbr ->public_var );
+			if ( n_pv -> distance +1 < own_pv . distance )
+				own_pv . distance = n_pv - > distance +1;
+		}
+		pvn_broadcast(&pvn); // broadcast new state
+		SLEEP_PERIOD;
+	}
 
 ## Going Offline
 	
@@ -85,7 +124,7 @@ We propose three different algorithms:
 From the potential parents of the BFS, choose the one with the lowest battery state (HIGH=1, LOW=3).
 If ambiguous, chose the one with the highest children count as the original algorithm.
 
-![Example EA1](./.index_md-files/ea-examples/ea1/ea1-3.png)
+![Example EA1](./.readme_md-files/mlst-ea1.gif)
 
 ### 2. Algorithm
 Build for each energy state a tree that is only allowed to use nodes as parents that have this or a better battery state.
@@ -95,7 +134,7 @@ Choose as parent the defined parent of the tree with lowest state (thus prefers 
 
 This algorithm always finds a tree that uses no LOW-Nodes or no MIDDLE/LOW-Nodes if such trees exist.
 
-![Example EA2](./.index_md-files/ea-examples/ea2/ea2-2.png)
+![Example EA2](./.readme_md-files/mlst-ea2.gif)
 
 ### 3. Algorithm
 The BFS-Tree can be seen as the routing tree for all edges with weight 1.
@@ -105,7 +144,7 @@ The potential parents are those with a lower value.
 
 This algorithm can be tuned by changing the weights.
 
-![Example EA3](./.index_md-files/ea-examples/ea3/ea3-2.png)
+![Example EA3](./.readme_md-files/mlst-ea3.gif)
 
 ### Experiments
 
