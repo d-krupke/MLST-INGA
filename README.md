@@ -79,7 +79,7 @@ Thus we obtain dist = min{n.dist+1 | n in Neighorhood}
 The implementation of the algorithm consists of two parts:
 
 1. Define a public variable and init PVN
-
+<pre>
 	struct distancePubVar { // The public variable
 	uint16_t distance ;
 	};
@@ -90,9 +90,11 @@ The implementation of the algorithm consists of two parts:
 		& own_pv , sizeof ( own_pv ) , // own PV
 		10 // Maximal age of neighbor entry
 		);
+</pre>
 
 2. Loop (actual algorithm)
-	
+
+<pre>
 	while (1){
 		pvn_remove_old_neighbr_information(&pvn);
 		own_pv . distance = 0 xffff ; // Set distance to maximal
@@ -107,7 +109,7 @@ The implementation of the algorithm consists of two parts:
 		pvn_broadcast(&pvn); // broadcast new state
 		SLEEP_PERIOD;
 	}
-
+</pre>
 ## Going Offline
 	
 	TODO
