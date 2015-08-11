@@ -14,7 +14,7 @@
 * Maximizing the amount of leaves is advantageous to minimize the overall energy consumption.
 * This problem is known as the Maximum Leaf Spanning Tree (NP-Complete due to equivalence to Maximum Connected Dominating Set [Paper](http://www.sciencedirect.com/science/article/pii/0012365X92901308))
 
-### Example
+### Example: Maximum Leaf Spanning Tree
 
 We have the following communication graph:
 
@@ -39,12 +39,10 @@ It starts on the BFS-Tree that can be very robust implemented while the other on
 
 ### Algorithm of Habibi and McLurkin
 
-Note: For the implementation we need public variables that are explained later. If you do not know public variables, read that section first.
-
-The general idea is to take a look on the BFS.
-The BFS can be simply implemented by a single public variable *d*: If sink, d=0. Otherwise d=min{n.d+1 | n in Neighorhood}.
-This gives us a set of potential parents (those neighbors n with n.d = d+1).
-From this set chose the parent with the maximal amount of children.
+General Idea:
+* Determine the distance to the root
+* Potential parents = nodes with lower distance
+* Choose node with most children from potential parents
 
 ![MLST-Animation](./.readme_md-files/mlst.gif)
 
@@ -56,7 +54,7 @@ There are some details that have to be taken care of like:
 
 However, for these details we refer to the original paper.
 
-## Experiments
+#### Experiments
 
 To evaluate the applicability and performance of the algorithm, experiments in a simulator ([Platypus300](https://github.com/SwarmRoboticResearch/platypus3000)).
 
@@ -67,7 +65,21 @@ To evaluate the applicability and performance of the algorithm, experiments in a
 ![Experiment-60Nodes-41Leaves](./.readme_md-files/60-41.png)
 ![Experiment-90Nodes-66Leaves](./.readme_md-files/90-66.png)
 
-## Public Variables
+
+## Components of the Implementation
+
+* Public Variable Neighborhood
+	* e.g. distance = min{n. distance +1 | n ∈ Neighborhood}
+	* Neighborhood has to be estimated
+	* Public Variables exchanged/updated
+	* Neighborhood can change
+* Reliable Sleepable Unicast
+	* A reliable unicast that goes offline if leaf and idle
+* MLST-Algorithm
+	* Habibi and McLurkin’s Algorithm
+	* Three (combinable) energy aware heuristics
+
+### Public Variables
 
 Public Variables are a robust concept for distributed algorithm that are close to the mathematical description.
 E.g. Let's build a routing tree, i.e., every node knows how far it is from the root.
@@ -81,13 +93,13 @@ The implementation of the algorithm consists of two parts:
 1. Define a public variable and init PVN
 <pre>
 	struct distancePubVar { // The public variable
-	uint16_t distance ;
+		uint16_t distance ;
 	};
 	struct distancePubVar own_pv ; // own instance of the PV
 	struct PVN pvn ; // The public variable neighborhood
 	own_pv . distance = 0 xffff ; // Set distance to maximal
-	pvn_init (& pvn , 123 , // Port
-		& own_pv , sizeof ( own_pv ) , // own PV
+	pvn_init (&pvn , 123 , // Port
+		&own_pv , sizeof ( own_pv ) , // own PV
 		10 // Maximal age of neighbor entry
 		);
 </pre>
@@ -110,9 +122,18 @@ The implementation of the algorithm consists of two parts:
 		SLEEP_PERIOD;
 	}
 </pre>
-## Going Offline
-	
-	TODO
+
+### Additional Aspects
+
+* The origin algorithm is made for other use case
+	* Very dynamic
+	* Always online
+* We want to switch leave node offline
+	* Offline nodes are ‘dead’. Solution: Periodically sent status messages
+	* Not aware of changes in environment. Solution: Fetch news from time to time
+	* Only go offline if local state is stable
+* Network is static for most of the time (but not always)
+	* Make update-frequency dependent on changes
 
 ## Energy Awareness
 
